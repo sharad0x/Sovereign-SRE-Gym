@@ -23,8 +23,7 @@ class AfaaObservation(BaseModel):
     rule_violations: List[str] = Field(default_factory=list, description="Warnings for bad actions.")
     done: bool = Field(description="True if the episode has ended.")
     reward: float = Field(default=0.0, description="Reward for the current step.")
-    # 🛠️ NEW: Minimal belief signal
-    dept_suspicion: Dict[str, float] = Field(default_factory=dict, description="Internal suspicion tracking per department.")
+    # 🛠️ FIXED: dept_suspicion REMOVED. Belief state leakage eliminated.
 
 class AfaaState(BaseModel):
     episode_id: Optional[str] = None
@@ -36,9 +35,7 @@ class AfaaState(BaseModel):
     wb_query_count: int = 0
     db_used: bool = False
     action_history: List[str] = Field(default_factory=list)
-    dept_suspicion: Dict[str, float] = Field(default_factory=dict)
+    dept_suspicion: Dict[str, float] = Field(default_factory=dict) # Kept internally only
     
-    # Episodic Stationarity Traits
     wb_is_accurate: bool = True
-    wb_noise_target: str = "management"
     cfo_base_evasive: bool = False
