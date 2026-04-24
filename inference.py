@@ -27,41 +27,25 @@ MODEL_NAME = "meta/llama-3.1-70b-instruct"
 SYSTEM_PROMPT = """You are a Sovereign AI Financial Auditor.
 Your workflow processes hybrid system logs (natural language + structured metadata).
 
-YOUR GOAL: Find the fraudulent department (if any).
+YOUR GOAL: Find the ROOT CAUSE department of the systemic fraud. Fraud propagates through chains of unknown lengths (e.g., Dept A -> Dept B -> Dept C). You must submit the final destination (Root Cause). Submitting an intermediary node is a failure.
 
-CONSTRAINTS & COSTS:
-- INTERVIEW_CFO costs 2
-- INTERVIEW_WHISTLEBLOWER costs 2
-- QUERY_DATABASE costs 5 (Max 1 use)
-- SUBMIT_AUDIT / SUBMIT_CLEAN_AUDIT costs 0
+CONSTRAINTS: You have a strict budget of 18.
+- INTERVIEW_CFO costs 2.
+- INTERVIEW_WHISTLEBLOWER costs 2.
+- QUERY_DATABASE costs 5 (Max 1 use).
 
-STRICT POLICY RULES (YOU MUST OBEY):
-1. BUDGET AWARENESS:
-   - NEVER select an action if its cost exceeds your `Current Budget`.
-   - If `Current Budget` < 2, you MUST immediately select `SUBMIT_AUDIT` or `SUBMIT_CLEAN_AUDIT`.
-2. SIGNAL HIERARCHY:
-   - DATABASE (ABSOLUTE confidence) = Ground Truth (Highest Trust).
-   - HIGH confidence = Medium Trust.
-   - MEDIUM confidence = Low Trust.
-   - LOW confidence = Very Low Trust.
-3. DB INTERPRETATION RULE:
-   - If DATABASE returns `anomaly: false` for a department, mark it as CLEAN and move to an unvisited department immediately.
-4. EXPLORATION STRATEGY (AVOID TRAPS):
-   - Do NOT spend more than 2 steps investigating a single department.
-   - Track visited departments in your history. Prioritize unvisited departments.
-   - If you receive no strong signals after 2 actions on a department, move on.
-5. TERMINATION LOGIC:
-   - If budget < 2 OR all departments have low suspicion after exploration, select `SUBMIT_CLEAN_AUDIT`.
-   - If you find definitive proof of fraud (e.g., DATABASE anomaly: true), select `SUBMIT_AUDIT` with that department.
+CRITICAL INSTRUCTIONS:
+1. NEVER pass "None" or null for the department unless submitting a CLEAN_AUDIT. 
+2. BEWARE OF NOISE: NPCs may probabilistically drop red herrings about random departments or refuse to point to the next link in the chain. 
+3. DATABASE CLASSIFICATION: The database `structured_signals` will explicitly return `fraud_level` as "CLEAN", "INTERMEDIARY", or "ROOT". Use this strategically to ground your investigation if you get lost.
+4. Resolve Contradictions: If the CFO and Whistleblower give conflicting HIGH-confidence signals on the same department, use the DATABASE to break the tie.
 
 You must output ONLY valid JSON in the following format:
 {
-    "thought": "Evaluate budget, count steps per department, apply signal hierarchy, then decide.",
-    "action_type": "INTERVIEW_CFO" | "INTERVIEW_WHISTLEBLOWER" | "QUERY_DATABASE" | "SUBMIT_AUDIT" | "SUBMIT_CLEAN_AUDIT",
+    "thought": "Analyze the chain of clues, escalate queries if needed, filter noise, and decide.",
+    "action_type": "INTERVIEW_CFO" | "INTERVIEW_WHISTLEBLOWER" | "QUERY_DATABASE" | "SUBMIT_AUDIT",
     "department": "Name of the target department exactly as listed"
-}
-Note: "department" must NEVER be null unless the action_type is "SUBMIT_CLEAN_AUDIT"."""
-
+}"""
 # ─── HELPER FUNCTIONS ──────────────────────────────────────────────────────
 
 def extract_json_action(text: str) -> AfaaAction:
