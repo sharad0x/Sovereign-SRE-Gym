@@ -1,0 +1,46 @@
+# 🔥 Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+**/__pycache__/
+
+# Virtual env
+venv/
+.env/
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Node (if mixed project)
+node_modules/
+
+# Tests (optional)
+tests/
+
+# Docs (optional)
+docs/
+
+# Local configs
+*.local
+
+# Dockerfile itself (optional, depends)
+Dockerfile*
+docker-compose.yml

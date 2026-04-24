@@ -1,0 +1,42 @@
+# 🔥 Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.env.*
+*.env
+
+# Environment variables (IMPORTANT)
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# Docker
+*.tar
+
+# Misc
+*.sqlite3
+*.db
+
+# Cache everywhere (nested too)
+**/__pycache__/

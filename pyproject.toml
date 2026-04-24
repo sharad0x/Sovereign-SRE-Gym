@@ -1,0 +1,18 @@
+[project]
+name = "openenv-AFAA"
+version = "0.1.0"
+description = "Adaptive Fraud Audit Arena for OpenEnv"
+requires-python = ">=3.10, <3.13"
+dependencies = [
+    # Core OpenEnv (Web UI is included in core in 0.2.x)
+    "openenv-core[core]>=0.2.3",
+    "uvicorn>=0.24.0",
+    "fastapi>=0.115.0",
+    
+    # Required for the AFAA Environment Data Models
+    "pydantic>=2.5.0",
+    
+    # Required for talking to the Ollama/NIM Sub-Agents
+    "openai>=1.10.0",
+    "python-dotenv>=1.0.0"
+]
