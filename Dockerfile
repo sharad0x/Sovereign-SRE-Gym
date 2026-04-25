@@ -1,47 +1,72 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest
-FROM ${BASE_IMAGE} AS builder
+# --------------------------------------------------
+# Base Image (Lightweight + Stable)
+# --------------------------------------------------
+FROM python:3.10-slim
 
+# --------------------------------------------------
+# Environment Variables
+# --------------------------------------------------
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
+# --------------------------------------------------
+# System Dependencies (minimal but sufficient)
+# --------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------
+# Create non-root user (HF best practice)
+# --------------------------------------------------
+RUN useradd -m appuser
+
+# --------------------------------------------------
+# Set Working Directory
+# --------------------------------------------------
 WORKDIR /app
 
-# Install git
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
-    rm -rf /var/lib/apt/lists/*
+# --------------------------------------------------
+# Copy Dependency Files First (cache optimization)
+# --------------------------------------------------
+COPY requirements.txt .
 
-# Copy your environment code to the builder
-COPY . /app/env
-WORKDIR /app/env
+# --------------------------------------------------
+# Install Python Dependencies
+# --------------------------------------------------
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-# Install uv if missing
-RUN if ! command -v uv >/dev/null 2>&1; then \
-        curl -LsSf https://astral.sh/uv/install.sh | sh && \
-        mv /root/.local/bin/uv /usr/local/bin/uv && \
-        mv /root/.local/bin/uvx /usr/local/bin/uvx; \
-    fi
-    
-# Sync dependencies via uv
-RUN uv sync --no-install-project --no-editable
+# --------------------------------------------------
+# Copy Full Project
+# --------------------------------------------------
+COPY . .
 
-# Final runtime stage
-FROM ${BASE_IMAGE}
+# --------------------------------------------------
+# Set Ownership (important for non-root execution)
+# --------------------------------------------------
+RUN chown -R appuser:appuser /app
 
-WORKDIR /app
+# Switch to non-root user
+USER appuser
 
-# Copy virtual env and code from builder
-COPY --from=builder /app/env/.venv /app/.venv
-COPY --from=builder /app/env /app/env
-
-# Set PATHs
-ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app/env:$PYTHONPATH"
-
-# Expose Port for Hugging Face
+# --------------------------------------------------
+# Expose Port (HF uses 8000)
+# --------------------------------------------------
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# --------------------------------------------------
+# Healthcheck (optional but recommended)
+# --------------------------------------------------
+HEALTHCHECK CMD curl --fail http://localhost:8000 || exit 1
 
-# Run the FastAPI server
-CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
+# --------------------------------------------------
+# Start Server
+# --------------------------------------------------
+# IMPORTANT:
+# Replace "server.app:app" if your FastAPI app path differs
+
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]

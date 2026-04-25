@@ -6,23 +6,20 @@ except (ImportError, ValueError):
     from models import AfaaState, AfaaActionType
 
 class CoordinationEngine:
-    """
-    Manages multi-agent coordination modes (INDEPENDENT, PANIC, COLLUSION).
-    Enforces the 'No Full Deception Lock' safety invariant.
-    """
-    
     @staticmethod
-    def update_mode(state: AfaaState, action_type: AfaaActionType, dept: str) -> bool:
-        if not state.config.enable_coordination: return False
-        
+    def update_mode(state, action_type, dept: str) -> bool:
+        if not getattr(state.config, "enable_coordination", False):
+            return False
+
         old_strategy = state.coordination_strategy
-        
-        # 🛠️ FLAW 4: Coordination derived purely from interaction history
+
         total_interactions = state.conflict_score + state.agreement_count
-        
-        if total_interactions > 0:
-            agreement_ratio = state.agreement_count / total_interactions
-            
+
+        if total_interactions == 0:
+            state.coordination_strategy = "INDEPENDENT"
+        else:
+            agreement_ratio = state.agreement_count / (total_interactions + 1e-6)
+
             if agreement_ratio > 0.7:
                 state.coordination_strategy = "FULL_COALITION"
             elif agreement_ratio > 0.4:
@@ -31,20 +28,17 @@ class CoordinationEngine:
                 state.coordination_strategy = "SHIFTING_LOYALTY"
             else:
                 state.coordination_strategy = "ACTIVE_BETRAYAL"
-                
+
         return state.coordination_strategy != old_strategy
         
     @staticmethod
-    def apply_posture_overrides(state: AfaaState, npc_role: str, base_posture: str) -> str:
-        mode = state.coordination_mode
+    def apply_posture_overrides(state, npc_role: str, base_posture: str) -> str:
+        # 🛠️ FIX 5: COORDINATION VARIABLE BUG
+        mode = state.coordination_strategy 
         if mode == "INDEPENDENT": return base_posture
             
-        if mode == "PANIC":
-            if npc_role == "CFO": return "Extremely hostile, hyper-defensive, threatening the auditor's credentials."
-            elif npc_role == "WHISTLEBLOWER": return "Frantic, leaking highly specific but disorganized internal logs."
-                
-        if mode == "COLLUSION":
+        if mode == "FULL_COALITION" or mode == "COLLUSION":
             if npc_role == "CFO": return "Highly confident but completely deceptive. Pointing explicitly to a known clean department as the root cause to trap the auditor."
             elif npc_role == "WHISTLEBLOWER": return "Intentionally vague and noisy. Refusing to confirm or deny the CFO's claims, providing contradictory noise instead of a clear signal."
-                
+        
         return base_posture

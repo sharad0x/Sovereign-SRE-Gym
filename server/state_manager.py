@@ -16,18 +16,14 @@ class StateManager:
     def attempt_mutation(state: AfaaState) -> bool:
         if not state.config.enable_dynamic_chain:
             return False
-            
+
         if state.shift_count >= 1:
             return False
 
-        # 🛠️ FIX 4 & 7: Guaranteed mutation at Step 6 to ensure dynamic visibility
-        force_mutation = (state.step_count == 6 and state.shift_count == 0)
-            
-        if state.step_count < 3 and not force_mutation:
+        if state.step_count < 3:
             return False
-            
-        if not force_mutation and random.random() > state.mutation_prob:
-            return False
+
+        state.post_mutation_instability_steps = 2
 
         mutable_nodes = [node for node, targets in state.fraud_graph.items() if targets]
         if not mutable_nodes:
@@ -35,19 +31,31 @@ class StateManager:
 
         mutate_node = random.choice(mutable_nodes)
         old_targets = state.fraud_graph[mutate_node]
-        
-        available_depts = [d for d in state.departments if d not in old_targets and d != mutate_node and d != state.root_cause]
+
+        available_depts = [
+            d for d in state.departments
+            if d not in old_targets and d != mutate_node and d not in state.root_causes
+        ]
         if not available_depts:
             return False
 
         new_node = random.choice(available_depts)
-        
+
         if old_targets:
-            state.outdated_nodes.append(old_targets[0])
+            old_node = old_targets[0]
+            state.outdated_nodes.append(old_node)
             state.fraud_graph[mutate_node][0] = new_node
-            
+
+            # 🔥 STORE STRUCTURED MUTATION INFO
+            state.last_mutation_info = {
+                "event": "STATE_SHIFT",
+                "from_node": mutate_node,
+                "old_target": old_node,
+                "new_target": new_node,
+                "step": state.step_count
+            }
+
         state.shift_count += 1
         state.last_mutation_step = state.step_count
-        state.post_mutation_instability_steps = 2 
-        
+
         return True
