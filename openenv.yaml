@@ -2,6 +2,6 @@ spec_version: 1
 name: AFAA
 type: space
 runtime: fastapi
-app: server.app:app
+# Points to the 'app' variable inside server/app.py
+app: server.app:app 
 port: 8000
-

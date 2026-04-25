@@ -16,3 +16,7 @@ dependencies = [
     "openai>=1.10.0",
     "python-dotenv>=1.0.0"
 ]
+
+[project.scripts]
+# This maps the 'server' command to your app's main function
+server = "server.app:main"
