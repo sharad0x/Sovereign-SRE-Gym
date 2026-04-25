@@ -26,6 +26,13 @@ class NPCPolicy:
             if claim.get("countered_by") != "None": strength_val -= (0.5 * decay)
                 
             argument_score[t] += strength_val
+
+            # ADD BEFORE final return
+            opponent_history = getattr(state, "belief_about_other", {}).get(opponent_source, {}).get("history", [])
+
+            for h in opponent_history:
+                if h["claimed_target"] == t:
+                    argument_score[t] -= 0.3  # penalize repeated opponent claim
             
         return max(argument_score, key=argument_score.get) if argument_score and max(argument_score.values()) > 0 else "None"
 
@@ -41,6 +48,18 @@ class NPCPolicy:
 
         coord = getattr(state, "coordination_strategy", "INDEPENDENT")
         best_arg_target = NPCPolicy._get_best_argument_target(state, "WHISTLEBLOWER")
+
+        # ==========================================
+        # NEW: COUNTER STRATEGY
+        # ==========================================
+        opponent_history = getattr(state, "belief_about_other", {}).get("WHISTLEBLOWER", {}).get("history", [])
+
+        if opponent_history:
+            last_claim = opponent_history[-1]["claimed_target"]
+
+            if strategy == "DECEPTION" and last_claim in state.departments:
+                # actively counter opponent
+                target = last_claim
 
         # 🔥 NEW: coordination affects decision weight
         deception_bias = 1.0

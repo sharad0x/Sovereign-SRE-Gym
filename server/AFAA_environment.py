@@ -49,7 +49,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
     def __init__(self):
         try:
             super().__init__()
-            self.max_steps = 20
+            self.max_steps = 30
             self._current_state = AfaaState()
             self.npc_engine = NPCEngine()
         except Exception as e:
@@ -103,14 +103,17 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
 
         if level == 1:
             diff_cfg["num_depts"] = 3
-            diff_cfg["num_intermediaries"] = 1
-            num_roots = 1
-        elif level == 2:
-            diff_cfg["num_depts"] = 5
             diff_cfg["num_intermediaries"] = 2
             num_roots = 1
+
+        elif level == 2:
+            diff_cfg["num_depts"] = 5
+            diff_cfg["num_intermediaries"] = 3
+            num_roots = 1
+
         else:
             diff_cfg["num_depts"] = min(7 + (level - 1), 12)
+            diff_cfg["num_intermediaries"] = min(4 + level, 6)
             num_roots = 2 if level >= 3 else 1
 
         depts = random.sample(all_depts_master, diff_cfg["num_depts"])
@@ -315,6 +318,20 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                     "strength": conf,
                     "step": self._current_state.step_count
                 })
+                # ==========================================
+                # NEW: OPPONENT MODELING (CRITICAL UPGRADE)
+                # ==========================================
+                opponent = "WHISTLEBLOWER" if source == "CFO" else "CFO"
+
+                if opponent in self._current_state.belief_about_other:
+                    self._current_state.belief_about_other[opponent]["history"].append({
+                        "claimed_target": target,
+                        "step": self._current_state.step_count
+                    })
+
+                    # keep last 5 only
+                    if len(self._current_state.belief_about_other[opponent]["history"]) > 5:
+                        self._current_state.belief_about_other[opponent]["history"].pop(0)
 
                 # ----------------------------------
                 # GLOBAL BELIEF UPDATE
@@ -386,6 +403,12 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             weighted_score = score * self.rubric_weights.get(rubric.name, 1.0)
             rubric_scores[rubric.name] = weighted_score
             total_reward += weighted_score
+
+        # ==========================================
+        # NEW: DELAYED REWARD PRESSURE (LONG-HORIZON)
+        # ==========================================
+        if self._current_state.step_count > 20:
+            total_reward -= 2.0
 
         nl_text = ""
         if getattr(self, "npc_engine", None) and decision and not done:
