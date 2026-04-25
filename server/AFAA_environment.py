@@ -139,12 +139,13 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             budget=40,
             departments=depts,
             fraud_graph=fraud_graph,
-            root_cause=root_causes[0],
+            root_causes=root_causes,  
             coordination_strategy=diff_cfg["starting_mode"],
             config=config
         )
 
-        self._current_state.root_causes = root_causes
+        # self._current_state.root_causes = root_causes
+        self._current_state.base_mutation_prob = diff_cfg["mutation_prob"]
         self._current_state.global_beliefs = {d: 1.0/len(depts) for d in depts}
         self._current_state.last_mutation_info = None  # 🔥 IMPORTANT
 
@@ -227,9 +228,10 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             
             decision = {
                 "source": "DATABASE",
-                "target": dept,
+                "target": dept,                
                 "fraud_level": fraud_level,
-                "confidence": random.choice(["HIGH", "MEDIUM"])
+                "confidence": random.choice(["HIGH", "MEDIUM"]),
+                "strategy": "DATA_VERIFICATION"    
             }
             
         # ==========================================
@@ -241,7 +243,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         if decision:
             target_node = decision.get("target")
             if target_node and target_node not in ["None", "CLEAN"] and target_node in self._current_state.departments:
-                if target_node not in self._current_state.discovered_nodes:
+                if target_node not in ["None", "CLEAN", "INTERMEDIARY", "ROOT"]:
                     self._current_state.discovered_nodes.append(target_node)
 
         # ==========================================
@@ -258,9 +260,9 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 fraud_level = decision.get("fraud_level")
 
                 if fraud_level == "ROOT":
-                    self._current_state.global_beliefs[target] += 0.3
+                    self._current_state.global_beliefs[target] += 0.2
                 elif fraud_level == "INTERMEDIARY":
-                    self._current_state.global_beliefs[target] += 0.15
+                    self._current_state.global_beliefs[target] += 0.1
                 else:  # CLEAN
                     self._current_state.global_beliefs[target] *= 0.8
 
@@ -323,15 +325,16 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 # ==========================================
                 opponent = "WHISTLEBLOWER" if source == "CFO" else "CFO"
 
-                if opponent in self._current_state.belief_about_other:
-                    self._current_state.belief_about_other[opponent]["history"].append({
-                        "claimed_target": target,
-                        "step": self._current_state.step_count
-                    })
+                if opponent not in self._current_state.belief_about_other:
+                    self._current_state.belief_about_other[opponent] = {"history": []}
 
-                    # keep last 5 only
-                    if len(self._current_state.belief_about_other[opponent]["history"]) > 5:
-                        self._current_state.belief_about_other[opponent]["history"].pop(0)
+                self._current_state.belief_about_other[opponent]["history"].append({
+                    "claimed_target": target,
+                    "step": self._current_state.step_count
+                })
+
+                if len(self._current_state.belief_about_other[opponent]["history"]) > 5:
+                    self._current_state.belief_about_other[opponent]["history"].pop(0)
 
                 # ----------------------------------
                 # GLOBAL BELIEF UPDATE
@@ -445,12 +448,26 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
 
             total_rewards.append(total_reward)
 
-            if obs.done and obs.reward > 0:
+            if obs.done and action_obj.action_type == AfaaActionType.SUBMIT_AUDIT:
                 success_count += 1
 
         print("\n===== DEBUG REPORT =====")
         print(f"Success Rate: {success_count/num_episodes:.2f}")
         print(f"Avg Reward: {sum(total_rewards)/len(total_rewards):.2f}")
+
+    def _fail_step(self, message: str, penalty: float) -> AfaaObservation:
+        """
+        Handles invalid actions safely without crashing the environment.
+        Returns a penalized observation but keeps episode alive.
+        """
+
+        return self._build_observation(
+            done=False,
+            reward=penalty,
+            last_decision=None,
+            aux_text=f"[INVALID ACTION] {message}",
+            rubric_scores={"InvalidAction": penalty}
+        )
 
     def _build_observation(self, done, reward, last_decision, aux_text, rubric_scores=None) -> AfaaObservation:
         """

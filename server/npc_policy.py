@@ -38,7 +38,11 @@ class NPCPolicy:
 
     @staticmethod
     def get_cfo_decision(state, topic: str) -> Dict[str, str]:
-        root_causes = getattr(state, "root_causes", [state.root_cause])
+        root_causes = getattr(state, "root_causes", None)
+
+        if root_causes is None:
+            raise RuntimeError("State missing 'root_causes' — invalid environment initialization")
+
         highest_global_belief = max(
             getattr(state, "global_beliefs", {"None": 1}),
             key=getattr(state, "global_beliefs", {}).get,
@@ -102,7 +106,10 @@ class NPCPolicy:
     @staticmethod
     def get_wb_decision(state, topic: str) -> Dict[str, str]:
         my_phase = getattr(state, "wb_phase", "STABLE")
-        root_causes = getattr(state, "root_causes", [state.root_cause])
+        root_causes = getattr(state, "root_causes", None)
+        if not root_causes:
+            root_causes = []
+            
         my_knowledge = getattr(state, "wb_noisy_graph", state.fraud_graph)
         
         if getattr(state, "wb_utility", 0) < getattr(state, "cfo_utility", 0):

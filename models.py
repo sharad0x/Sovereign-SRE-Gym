@@ -79,6 +79,9 @@ class AfaaState(BaseModel):
     coordination_strategy: str = "INDEPENDENT"
     claim_history: List[Dict[str, str]] = Field(default_factory=list)
     contradiction_flag: bool = False
+
+    cfo_hostility: float = 0.0
+    
     conflict_score: int = 0
     inter_agent_tension: float = 0.0
     credibility_floor: Dict[str, float] = Field(default_factory=lambda: {"CFO": 0.1, "WHISTLEBLOWER": 0.1})
