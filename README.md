@@ -67,4 +67,17 @@ from client import AfaaEnvClient
 # Use your actual Space URL
 env = AfaaEnvClient(base_url="https://your-username-afaa-env.hf.space")
 ```
-3. Training Results(Placeholder: After training, add your Reward/Loss curves here to satisfy the 20% Judging Criterion )📂 File Structuremodels.py: Type-safe Pydantic definitions for RL stability.server/AFAA_environment.py: Core logic, belief evolution, and budget physics.server/rubrics.py: The multi-faceted reward engine.client.py: Async-ready OpenEnv client for high-throughput training.
+
+### 3. Training Results
+(Placeholder: After training, add Reward/Loss curves here to satisfy the 20% Judging Criterion )
+
+---
+
+## 📂 File Structure
+
+* models.py: Type-safe Pydantic definitions for RL stability.
+* server/AFAA_environment.py: Core logic, belief evolution, and budget physics.
+* server/rubrics.py: The multi-faceted reward engine.
+* client.py: Async-ready OpenEnv client for high-throughput training.
+
+---
