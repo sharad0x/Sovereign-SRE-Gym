@@ -18,6 +18,7 @@ class AfaaAction(BaseModel):
     action_type: AfaaActionType = Field(..., description="The action to perform.")
     department: Optional[str] = Field(default=None, description="The target department.")
     utterance: Optional[str] = Field(None, description="What you actually say to the NPC.")
+    current_suspect: Optional[str] = Field(None, description="Who you currently think is the root cause based on evidence so far.")
 
 class AfaaObservation(BaseModel):
     budget_remaining: int = Field(description="Remaining budget.")

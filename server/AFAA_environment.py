@@ -237,17 +237,35 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 "strategy": "DATA_VERIFICATION"    
             }
 
-            # FIX 2: DB Leak Protection
-            db_artifact = {
-                "TIMESTAMP": f"2026-Q{random.randint(1,4)}",
-                "DEPT_ID": dept,
-                "ANOMALY_DETECTED": (
-                    random.random() < 0.7 if (is_root or is_intermediary)
-                    else random.random() < 0.2
-                ),
-                "RISK_LEVEL": "HIGH" if fraud_level in ["ROOT", "INTERMEDIARY"] else "LOW",
-                "SOURCE_IP": "REDACTED"
-            }
+            # 🚀 INNOVATION 2: ADVERSARIAL TOOLING (THE HACKED DB)
+            cfo_strategy = getattr(self._current_state, "coordination_strategy", "INDEPENDENT")
+            
+            if cfo_strategy in ["FULL_COALITION", "ACTIVE_BETRAYAL"] and random.random() < 0.5:
+                # The CFO has hacked the Database to frame a clean department!
+                clean_depts = [d for d in self._current_state.departments if d not in self._current_state.root_causes]
+                framed_target = random.choice(clean_depts) if clean_depts else dept
+                
+                db_artifact = {
+                    "TIMESTAMP": f"2026-Q{random.randint(1,4)}",
+                    "DEPT_ID": dept,
+                    "ANOMALY_DETECTED": True if dept == framed_target else False, # Falsified!
+                    "RISK_LEVEL": "HIGH" if dept == framed_target else "LOW",
+                    "SOURCE_IP": "10.0.4.CFO_TERMINAL", # A tiny clue for the LLM!
+                    "DATA_INTEGRITY": "COMPROMISED"
+                }
+            else:
+                # Normal DB Logic with Leak Protection
+                db_artifact = {
+                    "TIMESTAMP": f"2026-Q{random.randint(1,4)}",
+                    "DEPT_ID": dept,
+                    "ANOMALY_DETECTED": (
+                        random.random() < 0.7 if (is_root or is_intermediary)
+                        else random.random() < 0.2
+                    ),
+                    "RISK_LEVEL": "HIGH" if fraud_level in ["ROOT", "INTERMEDIARY"] else "LOW",
+                    "SOURCE_IP": "REDACTED",
+                    "DATA_INTEGRITY": "SECURE"
+                }
             self._current_state.last_db_artifact = db_artifact
 
             # FIX 6: ADD DATABASE SIGNAL TO ARGUMENT GRAPH
@@ -434,6 +452,19 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             weighted_score = score * self.rubric_weights.get(rubric.name, 1.0)
             rubric_scores[rubric.name] = weighted_score
             total_reward += weighted_score
+
+        # 🚀 INNOVATION 3: LATENT STATE "WORLD MODELING" REWARD
+        # Reward the agent if its internal hypothesis matches the ground truth
+        current_suspect = getattr(action, "current_suspect", None)
+        if current_suspect and current_suspect in self._current_state.departments:
+            if current_suspect in self._current_state.root_causes:
+                suspect_reward = 2.0
+                total_reward += suspect_reward
+                rubric_scores["Latent_Suspect_Tracking"] = suspect_reward
+            else:
+                # Slight penalty for holding the wrong belief
+                total_reward -= 0.5
+                rubric_scores["Latent_Suspect_Tracking"] = -0.5
 
         # ==========================================
         # NEW: DELAYED REWARD PRESSURE (LONG-HORIZON)

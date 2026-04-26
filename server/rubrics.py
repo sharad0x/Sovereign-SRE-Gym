@@ -166,3 +166,24 @@ class EntropyRubric(BaseRubric):
         # If the agent is getting less confused, reward them!
         entropy_diff = state.belief_entropy - next_state.belief_entropy
         return float(entropy_diff * 2.0)
+    
+class GroundedReasoningRubric(BaseRubric):
+    def __init__(self): super().__init__("Grounded_Reasoning")
+    
+    def evaluate(self, state, action, next_state, verifier_output) -> float:
+        reward = 0.0
+        thought = action.thought.lower()
+        
+        # 1. Did the agent mention the department it is taking action on?
+        if action.department and action.department.lower() not in thought:
+            reward -= 2.0  # Penalty for ungrounded "zombie" actions
+            
+        # 2. Did the agent reference the Database if it just queried it?
+        if action.action_type == "QUERY_DATABASE" and "database" not in thought and "db" not in thought:
+            reward -= 1.0
+            
+        # 3. Reward for explicitly formulating a hypothesis
+        if "hypothesis" in thought or "suspect" in thought or "lying" in thought:
+            reward += 1.5 
+            
+        return reward
