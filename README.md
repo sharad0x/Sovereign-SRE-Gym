@@ -16,8 +16,8 @@ tags:
 
 **An RL environment for training language models to reason under conflicting information, limited resources, and adversarial signals.**
 
-🔗 Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
-📝 Blog / Deep Dive: [Deep Dive Writeup](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md)
+* 🔗 Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
+* 📝 Blog / Deep Dive: [Deep Dive Writeup](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md)
 
 ---
 
