@@ -186,4 +186,47 @@ class GroundedReasoningRubric(BaseRubric):
         if "hypothesis" in thought or "suspect" in thought or "lying" in thought:
             reward += 1.5 
             
+        # 🚀 CHANGE 3: DECEPTION-AWARE REASONING
+        # Penalize if agent references DB but completely misses that it was hacked
+        db_artifact = getattr(state, "last_db_artifact", {})
+        if ("database" in thought or "db" in thought) and db_artifact.get("DATA_INTEGRITY") == "COMPROMISED":
+            if "compromised" not in thought and "hack" not in thought and "fake" not in thought and "manipulate" not in thought:
+                reward -= 2.5  # Agent is reasoning using corrupted data without skepticism!
+                
+        return reward
+
+class TemporalConsistencyRubric(BaseRubric):
+    def __init__(self): 
+        super().__init__("Temporal_Consistency")
+        
+    def evaluate(self, state, action, next_state, verifier_output) -> float:
+        reward = 0.0
+        current_suspect = getattr(action, "current_suspect", None)
+        
+        # state is the prev_state deeply copied at the start of step()
+        last_suspect = getattr(state, "last_suspect", None) 
+        history = getattr(state, "suspect_history", [])
+        
+        if current_suspect and last_suspect:
+            if current_suspect == last_suspect:
+                reward += 1.0  # Reward stable tracking
+                # Reward for long-term stability
+                if len(history) >= 3 and all(s == current_suspect for s in history[-3:]):
+                    reward += 0.5 
+            else:
+                # Flipped belief: base penalty
+                penalty = 3.0
+                thought = action.thought.lower()
+                
+                # Penalize Oscillation (A -> B -> A)
+                if len(history) >= 2 and current_suspect == history[-2]:
+                    penalty += 2.0  # Severe penalty for oscillating
+                
+                # Justified Belief Shift (Reduces penalty if reasoning is sound)
+                justification_words = ["because", "new evidence", "based on", "contradict", "realize", "however", "found that"]
+                if any(word in thought for word in justification_words):
+                    penalty = max(1.0, penalty - 2.0)  # Apply reduction
+                    
+                reward -= penalty
+                
         return reward

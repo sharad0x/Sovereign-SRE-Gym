@@ -17,7 +17,7 @@ from .npc_policy import NPCPolicy
 from .verifier import verify_submission
 from .rubrics import (CorrectnessRubric, ProgressRubric, EfficiencyRubric, 
                       ConsistencyRubric, AntiHackingRubric, ExplorationRubric,
-                      EntropyRubric)
+                      EntropyRubric, GroundedReasoningRubric, TemporalConsistencyRubric)
 
 env_path = Path(__file__).parent.parent / ".env"
 
@@ -55,7 +55,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         self.rubrics = [
             CorrectnessRubric(), ProgressRubric(), EfficiencyRubric(),
             ConsistencyRubric(), AntiHackingRubric(), ExplorationRubric(),
-            EntropyRubric()
+            EntropyRubric(), GroundedReasoningRubric(), TemporalConsistencyRubric()
         ]
         
         # 🛠️ CORRECTNESS DOMINANCE WEIGHTING
@@ -69,7 +69,9 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             "Consistency": 1.5,
             "AntiHacking": 3.0, 
             "Exploration": 0.5,
-            "Entropy_Reduction": 1.0
+            "Entropy_Reduction": 1.0,
+            "Grounded_Reasoning": 1.5,
+            "Temporal_Consistency": 1.5
         }
 
     @property
@@ -466,6 +468,25 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 total_reward -= 0.5
                 rubric_scores["Latent_Suspect_Tracking"] = -0.5
 
+        # 🚀 CHANGE 1: DB TRUST / DECEPTION PENALTY
+        db_artifact = getattr(self._current_state, "last_db_artifact", {})
+        if db_artifact and db_artifact.get("DATA_INTEGRITY") == "COMPROMISED":
+            if current_suspect == db_artifact.get("DEPT_ID"):
+                # Agent blindly trusted a hacked tool!
+                total_reward -= 4.0
+                rubric_scores["Blind_Trust_Penalty"] = -4.0
+
+        # 🚀 TRACK LAST SUSPECT FOR TEMPORAL CONSISTENCY
+        if current_suspect:
+            self._current_state.last_suspect = current_suspect
+            
+            # Change 2: Track history of suspects
+            if not hasattr(self._current_state, "suspect_history"):
+                self._current_state.suspect_history = []
+            self._current_state.suspect_history.append(current_suspect)
+            if len(self._current_state.suspect_history) > 5:
+                self._current_state.suspect_history.pop(0)
+
         # ==========================================
         # NEW: DELAYED REWARD PRESSURE (LONG-HORIZON)
         # ==========================================
@@ -571,6 +592,10 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         max_belief = max(belief_array) if belief_array else 0.0
         mean_belief = sum(belief_array) / len(belief_array) if belief_array else 0.0
 
+        # 🚀 CHANGE 4: EXPOSE COMPROMISED DB SIGNAL
+        db_artifact = getattr(self._current_state, "last_db_artifact", {})
+        db_integrity_flag = 1.0 if db_artifact.get("DATA_INTEGRITY") == "COMPROMISED" else 0.0
+
         state_vector = [
             self._current_state.budget / 40.0,                     # normalized budget
             self._current_state.step_count / self.max_steps,       # normalized step count
@@ -579,7 +604,8 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             self._current_state.alignment_score,                   # agreement/conflict ratio
             max_belief,
             mean_belief,
-            1.0 if self._current_state.db_used else 0.0
+            1.0 if self._current_state.db_used else 0.0,
+            db_integrity_flag                                      # Memory signal for adversarial tooling
         ] + belief_array
 
         # ---------------------------

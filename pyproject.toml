@@ -13,7 +13,7 @@ dependencies = [
     "pydantic>=2.5.0",
     
     # Required for talking to the Ollama/NIM Sub-Agents
-    "openai>=1.10.0",
+    "httpx>=0.27.0",
     "python-dotenv>=1.0.0"
 ]
 

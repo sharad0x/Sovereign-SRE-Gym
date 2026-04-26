@@ -5,3 +5,6 @@ runtime: fastapi
 # Points to the 'app' variable inside server/app.py
 app: server.app:app 
 port: 8000
+
+startup:
+  timeout: 120

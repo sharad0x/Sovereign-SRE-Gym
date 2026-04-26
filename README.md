@@ -9,206 +9,258 @@ base_path: /web
 tags:
   - openenv
   - reinforcement-learning
-  - grpo
+  - llm-training
 ---
 
 # 🕵️ Adaptive Fraud Audit Arena (AFAA)
-**A Sovereign Auditor Gym for training LLMs to detect deception in non-stationary financial environments.**
 
-Welcome to the Adaptive Fraud Audit Arena (AFAA). This production-grade Reinforcement Learning environment, built on **OpenEnv 0.2.3**, challenges LLM agents to act as forensic auditors uncovering root-cause fraud in a complex, shifting corporate graph. 
+**An RL environment for training language models to reason under conflicting information, limited resources, and adversarial signals.**
 
-This project targets **Theme #1 (Multi-Agent & Theory of Mind)** and **Theme #3.1 (Professional World Modeling)** by forcing agents to navigate conflicting NPC incentives, verify claims against ground-truth data, and manage a strict audit budget.
-
----
-
-## 📖 The Story: When Language Models Enter the Real World
-
-> *“The CFO looks calm. The Whistleblower sounds confident. Both are wrong.”*
-
-Modern LLMs are powerful—but dangerously trusting.
-
-They excel at pattern recognition, but in the real world:
-- people lie,
-- incentives conflict,
-- and truth is rarely stated directly.
+🔗 **Hugging Face Space:** *[ADD LINK]*
+🎥 **Demo Video (≤2 min):** *[ADD LINK]*
+📝 **Blog / Deep Dive:** *[ADD LINK]*
 
 ---
 
-### 🧠 The Problem We’re Tackling
+# 📌 Motivation
 
-Most benchmarks train models to **predict text**.
+Many existing environments evaluate whether an agent can reach a correct answer given available signals.
 
-But real-world intelligence requires:
-- **distrust under uncertainty**
-- **strategic questioning**
-- **adaptive reasoning when the world changes mid-task**
+AFAA focuses on a different aspect:
 
-AFAA is built around a simple but brutal question:
+> **How does an agent behave when the signals themselves are unreliable, incomplete, or strategically misleading?**
 
-> **Can an LLM learn to act like an auditor instead of a chatbot?**
+This includes situations where:
 
----
+* different sources provide conflicting claims
+* tools may return corrupted or manipulated data
+* the underlying system changes during interaction
 
-### 🎭 The Scenario
-
-You are the Lead Auditor.
-
-- Millions are missing.
-- The CFO is protecting their reputation.
-- The Whistleblower may be right—or dangerously misinformed.
-- The fraud chain is not static—it can mutate under pressure.
-
-Every action has a cost.
-
-Every statement may be misleading.
-
-Every delay reduces your chance of uncovering the truth.
+The goal is to move beyond “answer correctness” toward evaluating **decision-making under uncertainty**.
 
 ---
 
-### ⚠️ Why Standard LLMs Fail Here
+# 🧭 Environment Overview
 
-A naive LLM will:
-- trust high-confidence statements blindly  
-- follow the first plausible narrative  
-- ignore contradictions  
-- fail to re-evaluate after new evidence  
+The agent plays the role of an auditor investigating a set of departments connected through a hidden fraud graph.
 
-In AFAA, this behavior leads to:
-- ❌ wrong accusations  
-- ❌ wasted budget  
-- ❌ failure to identify the root cause  
+At each step, the agent can:
 
----
+* interact with different information sources
+* query a database
+* apply pressure or negotiation strategies
+* submit a final audit decision
 
-### 🔁 What Changes Through Training
-
-The agent must evolve from:
-
-> “Which answer sounds right?”
-
-to:
-
-> “Which agent should I trust—and why?”
-
-It learns to:
-- detect contradictions between agents  
-- strategically choose when to verify vs. probe  
-- adapt beliefs after **STATE_SHIFT events**  
-- balance cost vs. certainty under strict constraints  
+The episode ends when the agent submits its conclusion or runs out of budget.
 
 ---
 
-### 🧠 The Core Challenge
+## ⚙️ Core Mechanics
 
-This is not a QA task.
+### 1. Multi-Agent Information Sources
 
-This is:
-> **belief management under adversarial uncertainty**
+Two primary entities provide information:
 
-And the only way to solve it is through **interaction, not memorization**.
+* **CFO** → may cooperate or strategically mislead
+* **Whistleblower** → may be accurate or noisy
 
----
+Their behavior is not fixed; it depends on internal incentives and coordination modes.
 
-## 🚀 Environment Innovation: Non-Stationary Deception
+**Engineering detail:**
 
-AFAA goes beyond standard static RL benchmarks by introducing **Dynamic Topology Shifts**. It specifically tests an agent's ability to maintain a "Theory of Mind" in an adversarial setting.
-
-### The Novel Mechanics:
-1. **Dynamic Topology Shifts:** The fraud chain can mutate mid-audit. If the agent pressures the wrong node, the fraudsters might panic and change their cover story, emitting a `mutation_flag`. The agent must learn to discard old beliefs and adapt instantly.
-2. **Multi-Agent Incentive Modeling:** The agent receives natural language signals from NPCs. It must learn the difference between an evasive CFO protecting their bonus and a misinformed Whistleblower acting on rumors. 
-3. **Resource-Constrained Investigation:**
-   * **Action Space:** `QUERY_DATABASE` (High cost, high truth), `INTERVIEW_CFO` (Low cost, high deception risk), `PRESSURE_CFO` (High risk, high reward), `OFFER_LENIENCY`, and `SUBMIT_AUDIT`.
-   * **Observation Space:** The agent tracks its `budget_remaining`, `belief_entropy`, `conflict_score`, and a normalized `state_vector` to gauge how close it is to the truth.
+* Decisions are generated through deterministic + stochastic policy logic
+* Claims are stored in an argument graph with decay and credibility tracking
 
 ---
 
-## 🧠 Why This Environment Matters
+### 2. Structured but Unreliable Tooling
 
-AFAA is not just a simulation.
+The agent can query a database for high-value signals.
 
-It models real-world decision-making problems:
-- financial fraud investigation  
-- cybersecurity incident response  
-- intelligence analysis under conflicting reports  
+However:
 
-Where:
-- truth is hidden  
-- signals are noisy  
-- and wrong decisions are costly  
+* responses may be partially corrupted
+* anomalies are probabilistic, not deterministic
+* structured artifacts (e.g., integrity flags, metadata) must be interpreted
 
-The goal is not just to find answers—
+**Engineering detail:**
 
-> it is to learn how to **reason under deception**.
+* database responses include structured fields like `DATA_INTEGRITY`
+* corruption is injected probabilistically
+* signals are exposed through observation space (not hidden)
 
 ---
 
-## 🧪 Agent Behavior: Before vs After Training
+### 3. Non-Stationary Environment
 
-### 🟥 Before Training (Naive Policy)
-- Follows first high-confidence signal  
-- Rarely uses database efficiently  
-- Ignores contradictions between agents  
-- Fails when fraud chain mutates  
+The fraud structure is not guaranteed to remain fixed.
 
-👉 Behavior: **Reactive, gullible, inefficient**
+* connections between nodes may change
+* previously valid reasoning paths can become outdated
 
----
+**Engineering detail:**
 
-### 🟩 After Training (Learned Policy)
-- Cross-validates conflicting claims  
-- Uses database only when necessary  
-- Detects deception patterns  
-- Adapts within 1–2 steps after mutation  
-
-👉 Behavior: **Strategic, skeptical, adaptive**
+* controlled mutation system (`STATE_SHIFT`)
+* mutation events are explicitly surfaced via observation
+* bounded to preserve RL stability
 
 ---
 
-## ⚙️ Training Pipeline & Reward Setup
+### 4. Belief-Based State Representation
 
-Our training pipeline is built for efficiency and strict behavioral shaping. We utilize **Group Relative Policy Optimization (GRPO)** with 4-bit Unsloth quantization, connecting a Colab T4 trainer to our live Hugging Face Space via OpenEnv's WebSocket scaling. The package management is handled cleanly via `uv` for reproducible builds.
+Instead of discrete labels, the agent maintains a belief distribution over departments.
 
-### The Composable Rubric System
-RL is only as good as its reward signal. We use a multi-tiered rubric to objectively score subjective interactions:
-* **The "Silver Bullet" (Correctness - 5.0x Weight):** Massive positive reward for `SUBMIT_AUDIT` with the correct root-cause department. Heavy penalties for false accusations.
-* **Anti-Hacking Penalty:** Penalizes repetitive action loops and "guessing" (e.g., submitting an audit when the agent's internal belief confidence is mathematically < 0.3).
-* **Efficiency Tax:** A standard time penalty forces the agent to solve the audit using the fewest possible budget steps.
-* **Consistency Reward:** Rewards stable reasoning and penalizes wild, erratic shifts in the agent's global belief distribution late in the episode.
+**State includes:**
 
----
+* `global_beliefs` (probability distribution)
+* entropy (uncertainty measure)
+* conflict score (signal disagreement)
 
-### Why the Reward Design Matters
+This enables:
 
-The reward system is designed to prevent shortcut learning.
-
-An agent that:
-- blindly trusts NPCs  
-- overuses database queries  
-- or randomly submits audits  
-
-will consistently receive lower rewards.
-
-Only agents that:
-- manage uncertainty  
-- resolve contradictions  
-- and act efficiently  
-
-can achieve high scores.
-
-This ensures that training reflects **real capability improvement**, not reward exploitation.
+* continuous reasoning
+* measurable uncertainty reduction
 
 ---
 
-## 📈 Evidence of Training (In Progress)
+# 🧠 What Is Being Evaluated
 
-Training is currently underway.
+The environment is designed to evaluate three aspects:
+
+---
+
+## 1. Decision Accuracy
+
+Can the agent correctly identify the root cause?
+
+---
+
+## 2. Reasoning Stability
+
+Does the agent maintain a consistent hypothesis over time?
+
+**Engineering detail:**
+
+* temporal consistency tracking
+* penalties for oscillating belief patterns
+
+---
+
+## 3. Robustness to Deception
+
+Does the agent detect and handle misleading signals?
+
+**Engineering detail:**
+
+* adversarial database conditions
+* penalties for blind trust in corrupted data
+* reward adjustments based on reasoning context
+
+---
+
+# 🧪 Reward Design
+
+AFAA uses a composable rubric-based reward system.
+
+### Components:
+
+* **Correctness** → final outcome accuracy
+* **Progress** → discovery of relevant nodes
+* **Efficiency** → cost-aware behavior
+* **Consistency** → stability of beliefs
+* **Anti-Hacking** → prevents shortcut policies
+* **Entropy Reduction** → encourages convergence
+* **Reasoning Signals** → grounded and explainable decisions
+
+---
+
+## Why This Matters
+
+The reward is not only based on *what* the agent does, but also *how* it arrives there.
+
+This reduces:
+
+* random guessing
+* over-reliance on single signals
+* unstable decision policies
+
+---
+
+# 🔍 Example Behavior Shift
+
+### Before Training
+
+* reacts to latest signal
+* trusts high-confidence outputs
+* frequently changes hypothesis
+
+---
+
+### After Training
+
+* compares multiple sources
+* treats tool outputs cautiously
+* maintains stable belief trajectory
+* adapts after environment changes
+
+---
+
+# 📈 Training Results (To Be Added)
 
 This section will include:
 
-- 📊 Reward curves across episodes  
-- 📉 Entropy reduction trends (belief stabilization)  
-- 🔁 Before vs after behavior comparisons  
-- 🎯 Success rate improvements  
+* reward curves over episodes
+* entropy reduction trends
+* success rate improvement
+* trajectory comparison (before vs after)
 
-These metrics will demonstrate that the agent is not only improving rewards—but also learning **strategic, deception-aware reasoning**.
+---
+
+# 🎥 Demo (To Be Added)
+
+Short video demonstrating:
+
+* baseline behavior
+* trained agent behavior
+* handling of misleading signals
+
+---
+
+# 📝 Blog / Deep Dive (To Be Added)
+
+Will cover:
+
+* design decisions
+* reward shaping rationale
+* failure cases
+* lessons learned
+
+---
+
+# 🧠 Why This Environment Is Useful
+
+AFAA is relevant for scenarios where:
+
+* information sources are not fully reliable
+* decisions must be made incrementally
+* systems may change during interaction
+
+Examples include:
+
+* financial auditing
+* security incident investigation
+* multi-source intelligence analysis
+
+---
+
+# 🔗 Links
+
+* Hugging Face Space: *[ADD]*
+* Video Demo: *[ADD]*
+* Blog: *[ADD]*
+
+---
+
+# 🙌 Notes
+
+This environment is designed to explore how RL can be used not just for optimization, but for **structured reasoning under uncertainty**.
