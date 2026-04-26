@@ -221,7 +221,7 @@ Examples:
 # 🔗 Links
 
 * Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
-* Blog: [Deep Dive Writeup](https://github.com/sharad0x/openenv-afaa/blob/main/blog.md)
+* Blog: [Deep Dive Writeup](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md)
 * Repository: https://github.com/sharad0x/Sovereign-SRE-Gym
 
 ---
