@@ -120,3 +120,8 @@ class AfaaState(BaseModel):
     mutation_decay_factor: float = 1.0
     cfo_utility: float = 0.0
     wb_utility: float = 0.0
+    
+    # Fields required for Temporal Consistency Tracking
+    last_suspect: Optional[str] = None
+    suspect_history: List[str] = Field(default_factory=list)
+    last_db_artifact: Optional[Dict[str, Any]] = None

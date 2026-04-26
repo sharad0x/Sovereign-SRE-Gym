@@ -188,7 +188,7 @@ class GroundedReasoningRubric(BaseRubric):
             
         # 🚀 CHANGE 3: DECEPTION-AWARE REASONING
         # Penalize if agent references DB but completely misses that it was hacked
-        db_artifact = getattr(state, "last_db_artifact", {})
+        db_artifact = getattr(state, "last_db_artifact") or {}
         if ("database" in thought or "db" in thought) and db_artifact.get("DATA_INTEGRITY") == "COMPROMISED":
             if "compromised" not in thought and "hack" not in thought and "fake" not in thought and "manipulate" not in thought:
                 reward -= 2.5  # Agent is reasoning using corrupted data without skepticism!

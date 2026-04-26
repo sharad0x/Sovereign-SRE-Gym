@@ -16,251 +16,216 @@ tags:
 
 **An RL environment for training language models to reason under conflicting information, limited resources, and adversarial signals.**
 
-🔗 **Hugging Face Space:** *[ADD LINK]*
-🎥 **Demo Video (≤2 min):** *[ADD LINK]*
-📝 **Blog / Deep Dive:** *[ADD LINK]*
+🔗 Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
+📝 Blog / Deep Dive: *[ADD LINK]*
 
 ---
 
 # 📌 Motivation
 
-Many existing environments evaluate whether an agent can reach a correct answer given available signals.
+Most RL environments evaluate whether an agent can reach a correct answer.
 
-AFAA focuses on a different aspect:
+AFAA focuses on a different question:
 
-> **How does an agent behave when the signals themselves are unreliable, incomplete, or strategically misleading?**
+> **How does an agent behave when the signals themselves are unreliable, incomplete, or misleading?**
 
 This includes situations where:
 
-* different sources provide conflicting claims
-* tools may return corrupted or manipulated data
-* the underlying system changes during interaction
+* multiple sources disagree
+* tools provide noisy or corrupted outputs
+* the environment changes during interaction
 
-The goal is to move beyond “answer correctness” toward evaluating **decision-making under uncertainty**.
+The goal is to move beyond correctness toward **decision-making under uncertainty**.
 
 ---
 
 # 🧭 Environment Overview
 
-The agent plays the role of an auditor investigating a set of departments connected through a hidden fraud graph.
+The agent plays the role of an auditor investigating departments connected through a hidden fraud graph.
 
-At each step, the agent can:
+At each step, it can:
 
-* interact with different information sources
+* interview a CFO
+* interact with a whistleblower
 * query a database
-* apply pressure or negotiation strategies
-* submit a final audit decision
+* apply negotiation strategies
+* submit a final audit
 
-The episode ends when the agent submits its conclusion or runs out of budget.
+The episode ends when the agent submits a decision or runs out of budget.
 
 ---
 
-## ⚙️ Core Mechanics
+# ⚙️ Core Mechanics
 
-### 1. Multi-Agent Information Sources
+## 1. Multi-Source Signals
 
 Two primary entities provide information:
 
 * **CFO** → may cooperate or strategically mislead
 * **Whistleblower** → may be accurate or noisy
 
-Their behavior is not fixed; it depends on internal incentives and coordination modes.
-
-**Engineering detail:**
-
-* Decisions are generated through deterministic + stochastic policy logic
-* Claims are stored in an argument graph with decay and credibility tracking
+Claims are tracked and can conflict over time.
 
 ---
 
-### 2. Structured but Unreliable Tooling
+## 2. Imperfect Tools
 
-The agent can query a database for high-value signals.
+The database provides structured signals, but:
 
-However:
+* results may be noisy or misleading
+* anomalies are exposed, not hidden
 
-* responses may be partially corrupted
-* anomalies are probabilistic, not deterministic
-* structured artifacts (e.g., integrity flags, metadata) must be interpreted
-
-**Engineering detail:**
-
-* database responses include structured fields like `DATA_INTEGRITY`
-* corruption is injected probabilistically
-* signals are exposed through observation space (not hidden)
+The agent must interpret—not blindly trust—the outputs.
 
 ---
 
-### 3. Non-Stationary Environment
+## 3. Dynamic Environment
 
-The fraud structure is not guaranteed to remain fixed.
+The fraud graph is not always fixed:
 
-* connections between nodes may change
-* previously valid reasoning paths can become outdated
+* connections may change
+* previously valid reasoning paths may become outdated
 
-**Engineering detail:**
-
-* controlled mutation system (`STATE_SHIFT`)
-* mutation events are explicitly surfaced via observation
-* bounded to preserve RL stability
+Mutation events are controlled and observable.
 
 ---
 
-### 4. Belief-Based State Representation
+## 4. Belief-Based State
 
-Instead of discrete labels, the agent maintains a belief distribution over departments.
+The agent maintains a belief distribution over departments.
 
-**State includes:**
+State includes:
 
-* `global_beliefs` (probability distribution)
-* entropy (uncertainty measure)
-* conflict score (signal disagreement)
+* `global_beliefs`
+* entropy (uncertainty)
+* conflict score
 
-This enables:
-
-* continuous reasoning
-* measurable uncertainty reduction
+This allows tracking **reasoning evolution**, not just outcomes.
 
 ---
 
-# 🧠 What Is Being Evaluated
-
-The environment is designed to evaluate three aspects:
-
----
+# 🧠 What Is Evaluated
 
 ## 1. Decision Accuracy
 
-Can the agent correctly identify the root cause?
-
----
+Can the agent identify the correct root cause?
 
 ## 2. Reasoning Stability
 
-Does the agent maintain a consistent hypothesis over time?
-
-**Engineering detail:**
-
-* temporal consistency tracking
-* penalties for oscillating belief patterns
-
----
+Does the agent maintain consistent beliefs over time?
 
 ## 3. Robustness to Deception
 
-Does the agent detect and handle misleading signals?
-
-**Engineering detail:**
-
-* adversarial database conditions
-* penalties for blind trust in corrupted data
-* reward adjustments based on reasoning context
+Can the agent handle misleading or conflicting signals?
 
 ---
 
 # 🧪 Reward Design
 
-AFAA uses a composable rubric-based reward system.
+AFAA uses a rubric-based reward system:
 
-### Components:
+* **Correctness**
+* **Progress**
+* **Efficiency**
+* **Consistency**
+* **Anti-Hacking**
+* **Exploration**
 
-* **Correctness** → final outcome accuracy
-* **Progress** → discovery of relevant nodes
-* **Efficiency** → cost-aware behavior
-* **Consistency** → stability of beliefs
-* **Anti-Hacking** → prevents shortcut policies
-* **Entropy Reduction** → encourages convergence
-* **Reasoning Signals** → grounded and explainable decisions
+The reward reflects both:
+
+> what the agent does and how it reasons
 
 ---
 
-## Why This Matters
+# ⚠️ Understanding Training Signals (Preliminary)
 
-The reward is not only based on *what* the agent does, but also *how* it arrives there.
+Training in AFAA produces signals that may appear unusual compared to standard RL environments.
 
-This reduces:
+---
 
-* random guessing
+## Negative Rewards
+
+Early-stage agents often produce strongly negative rewards due to:
+
+* inconsistent reasoning
+* inefficient exploration
 * over-reliance on single signals
-* unstable decision policies
+
+➡️ The reward function is intentionally strict.
 
 ---
 
-# 🔍 Example Behavior Shift
+## High Variance
 
-### Before Training
+Rewards fluctuate because:
 
-* reacts to latest signal
-* trusts high-confidence outputs
-* frequently changes hypothesis
+* signals are stochastic
+* sources may conflict
+* environment structure may change
+
+➡️ Variance reflects reasoning difficulty, not instability.
 
 ---
 
-### After Training
+## Delayed Improvement
 
-* compares multiple sources
-* treats tool outputs cautiously
-* maintains stable belief trajectory
-* adapts after environment changes
+Agents must first learn to:
+
+* reduce contradictions
+* stabilize beliefs
+* avoid misleading signals
+
+➡️ Improvements appear gradually, not immediately.
+
+---
+
+## Structured Output Constraints
+
+LLM agents may produce:
+
+* parsing errors
+* invalid actions
+
+➡️ This reflects real-world integration constraints.
 
 ---
 
 # 📈 Training Results (To Be Added)
 
-This section will include:
+## 📊 Sample Training Signals (Preview)
 
-* reward curves over episodes
-* entropy reduction trends
-* success rate improvement
-* trajectory comparison (before vs after)
+![Reward Curve](./assets/reward.png)
 
----
+![Entropy Reduction](./assets/entropy.png)
 
-# 🎥 Demo (To Be Added)
-
-Short video demonstrating:
-
-* baseline behavior
-* trained agent behavior
-* handling of misleading signals
+![Baseline vs Trained](./assets/comparison.png)
 
 ---
 
-# 📝 Blog / Deep Dive (To Be Added)
+# 🧠 Why This Environment Matters
 
-Will cover:
+AFAA is designed for scenarios where:
 
-* design decisions
-* reward shaping rationale
-* failure cases
-* lessons learned
+* information is unreliable
+* decisions are sequential
+* systems change over time
 
----
+Examples:
 
-# 🧠 Why This Environment Is Useful
-
-AFAA is relevant for scenarios where:
-
-* information sources are not fully reliable
-* decisions must be made incrementally
-* systems may change during interaction
-
-Examples include:
-
-* financial auditing
-* security incident investigation
-* multi-source intelligence analysis
+* financial audits
+* incident investigations
+* intelligence analysis
 
 ---
 
 # 🔗 Links
 
-* Hugging Face Space: *[ADD]*
-* Video Demo: *[ADD]*
-* Blog: *[ADD]*
+* Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
+* Blog: [Deep Dive Writeup](https://github.com/sharad0x/openenv-afaa/blob/main/blog.md)
+* Repository: https://github.com/sharad0x/Sovereign-SRE-Gym
 
 ---
 
-# 🙌 Notes
+# 🧠 Note
 
-This environment is designed to explore how RL can be used not just for optimization, but for **structured reasoning under uncertainty**.
+This environment is designed to explore how RL systems behave when **reasoning quality—not just final correctness—is treated as a core objective.**

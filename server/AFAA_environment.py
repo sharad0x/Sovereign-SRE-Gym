@@ -189,8 +189,10 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             cost = 3
         
         if self._current_state.budget < cost:
-            return self._fail_step(f"Insufficient budget. Required: {cost}.", -10.0)
-
+            # Check if this was the last allowed step before failing
+            is_done = done or (self._current_state.step_count >= self.max_steps)
+            return self._build_observation(is_done, -10.0, None, f"Insufficient budget for {action.action_type.name}.", {"Efficiency": -10.0})
+        
         if action.action_type not in [AfaaActionType.SUBMIT_AUDIT, AfaaActionType.SUBMIT_CLEAN_AUDIT] and dept not in self._current_state.departments:
              return self._fail_step(f"Invalid department: {dept}", -10.0)
 
@@ -469,8 +471,8 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 rubric_scores["Latent_Suspect_Tracking"] = -0.5
 
         # 🚀 CHANGE 1: DB TRUST / DECEPTION PENALTY
-        db_artifact = getattr(self._current_state, "last_db_artifact", {})
-        if db_artifact and db_artifact.get("DATA_INTEGRITY") == "COMPROMISED":
+        db_artifact = getattr(self._current_state, "last_db_artifact") or {}
+        if db_artifact.get("DATA_INTEGRITY") == "COMPROMISED":
             if current_suspect == db_artifact.get("DEPT_ID"):
                 # Agent blindly trusted a hacked tool!
                 total_reward -= 4.0
@@ -593,7 +595,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         mean_belief = sum(belief_array) / len(belief_array) if belief_array else 0.0
 
         # 🚀 CHANGE 4: EXPOSE COMPROMISED DB SIGNAL
-        db_artifact = getattr(self._current_state, "last_db_artifact", {})
+        db_artifact = getattr(self._current_state, "last_db_artifact") or {}
         db_integrity_flag = 1.0 if db_artifact.get("DATA_INTEGRITY") == "COMPROMISED" else 0.0
 
         state_vector = [
