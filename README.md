@@ -17,7 +17,7 @@ tags:
 **An RL environment for training language models to reason under conflicting information, limited resources, and adversarial signals.**
 
 🔗 Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
-📝 Blog / Deep Dive: *[ADD LINK]*
+📝 Blog / Deep Dive: [Deep Dive Writeup](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md)
 
 ---
 
@@ -29,27 +29,21 @@ AFAA focuses on a different question:
 
 > **How does an agent behave when the signals themselves are unreliable, incomplete, or misleading?**
 
-This includes situations where:
-
-* multiple sources disagree
-* tools provide noisy or corrupted outputs
-* the environment changes during interaction
-
 The goal is to move beyond correctness toward **decision-making under uncertainty**.
 
 ---
 
 # 🧭 Environment Overview
 
-The agent plays the role of an auditor investigating departments connected through a hidden fraud graph.
+The agent acts as an auditor investigating departments connected through a hidden fraud graph.
 
-At each step, it can:
+Available actions include:
 
-* interview a CFO
-* interact with a whistleblower
-* query a database
-* apply negotiation strategies
-* submit a final audit
+* interviewing a CFO
+* interacting with a whistleblower
+* querying a database
+* applying negotiation strategies
+* submitting a final audit
 
 The episode ends when the agent submits a decision or runs out of budget.
 
@@ -59,173 +53,107 @@ The episode ends when the agent submits a decision or runs out of budget.
 
 ## 1. Multi-Source Signals
 
-Two primary entities provide information:
-
-* **CFO** → may cooperate or strategically mislead
-* **Whistleblower** → may be accurate or noisy
-
-Claims are tracked and can conflict over time.
-
----
+* CFO and Whistleblower provide potentially conflicting information
+* signals evolve over time
 
 ## 2. Imperfect Tools
 
-The database provides structured signals, but:
-
-* results may be noisy or misleading
-* anomalies are exposed, not hidden
-
-The agent must interpret—not blindly trust—the outputs.
-
----
+* database outputs may be noisy or misleading
+* the agent must interpret—not blindly trust
 
 ## 3. Dynamic Environment
 
-The fraud graph is not always fixed:
-
-* connections may change
-* previously valid reasoning paths may become outdated
-
-Mutation events are controlled and observable.
-
----
+* underlying fraud structure may change
+* previously valid reasoning can become outdated
 
 ## 4. Belief-Based State
 
-The agent maintains a belief distribution over departments.
-
-State includes:
+The agent maintains:
 
 * `global_beliefs`
 * entropy (uncertainty)
 * conflict score
 
-This allows tracking **reasoning evolution**, not just outcomes.
-
----
-
-# 🧠 What Is Evaluated
-
-## 1. Decision Accuracy
-
-Can the agent identify the correct root cause?
-
-## 2. Reasoning Stability
-
-Does the agent maintain consistent beliefs over time?
-
-## 3. Robustness to Deception
-
-Can the agent handle misleading or conflicting signals?
+This enables tracking reasoning evolution over time.
 
 ---
 
 # 🧪 Reward Design
 
-AFAA uses a rubric-based reward system:
+The environment uses a rubric-based reward system:
 
-* **Correctness**
-* **Progress**
-* **Efficiency**
-* **Consistency**
-* **Anti-Hacking**
-* **Exploration**
+* Correctness
+* Progress
+* Efficiency
+* Consistency
+* Anti-Hacking
+* Exploration
 
 The reward reflects both:
 
-> what the agent does and how it reasons
+> outcome and reasoning behavior
 
 ---
 
-# ⚠️ Understanding Training Signals (Preliminary)
+# ⚠️ Understanding Training Signals
 
-Training in AFAA produces signals that may appear unusual compared to standard RL environments.
-
----
+Training in AFAA produces signals that differ from standard RL environments.
 
 ## Negative Rewards
 
-Early-stage agents often produce strongly negative rewards due to:
+Early-stage agents receive strong penalties due to:
 
 * inconsistent reasoning
 * inefficient exploration
-* over-reliance on single signals
-
-➡️ The reward function is intentionally strict.
-
----
 
 ## High Variance
 
-Rewards fluctuate because:
+Rewards fluctuate due to:
 
-* signals are stochastic
-* sources may conflict
-* environment structure may change
-
-➡️ Variance reflects reasoning difficulty, not instability.
-
----
+* stochastic signals
+* conflicting sources
+* dynamic structure
 
 ## Delayed Improvement
 
-Agents must first learn to:
-
-* reduce contradictions
-* stabilize beliefs
-* avoid misleading signals
-
-➡️ Improvements appear gradually, not immediately.
+Agents must first stabilize reasoning before improving outcomes.
 
 ---
 
-## Structured Output Constraints
+# 📈 Training Signal (Preview)
 
-LLM agents may produce:
+Below is a representative reward curve from early training:
 
-* parsing errors
-* invalid actions
+![Reward Curve](./assets/reward_curve.png)
 
-➡️ This reflects real-world integration constraints.
-
----
-
-# 📈 Training Results (To Be Added)
-
-## 📊 Sample Training Signals (Preview)
-
-![Reward Curve](./assets/reward.png)
-
-![Entropy Reduction](./assets/entropy.png)
-
-![Baseline vs Trained](./assets/comparison.png)
+*Reward trend across training steps. Improvement is gradual due to strict reasoning constraints.*
 
 ---
 
 # 🧠 Why This Environment Matters
 
-AFAA is designed for scenarios where:
+AFAA is designed for scenarios involving:
 
-* information is unreliable
-* decisions are sequential
-* systems change over time
+* unreliable information
+* sequential decision-making
+* evolving systems
 
 Examples:
 
 * financial audits
-* incident investigations
-* intelligence analysis
+* investigations
+* decision support systems
 
 ---
 
 # 🔗 Links
 
 * Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
-* Blog: [Deep Dive Writeup](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md)
+* Blog: https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/blog.md
 * Repository: https://github.com/sharad0x/Sovereign-SRE-Gym
 
 ---
 
 # 🧠 Note
 
-This environment is designed to explore how RL systems behave when **reasoning quality—not just final correctness—is treated as a core objective.**
+This environment explores how RL systems behave when **reasoning quality—not just final correctness—is treated as a core objective.**

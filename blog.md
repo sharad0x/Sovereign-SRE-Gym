@@ -24,42 +24,35 @@ The objective is to identify the root cause within a limited budget.
 
 ## ⚠️ Conflicting Signals
 
-In AFAA, different sources may disagree.
+Different sources may disagree:
 
 * CFO may point to one department
 * Whistleblower may point to another
-* both may appear confident
 
-👉 This forces the agent to evaluate multiple signals instead of relying on one.
-
-![Conflicting Signals](./assets/conflict.png)
+This forces the agent to evaluate consistency over time rather than relying on a single signal.
 
 ---
 
 ## 🛠️ Imperfect Tools
 
-The database provides structured signals, but:
+The database provides structured outputs, but:
 
-* some outputs may be noisy
+* some results may be noisy
 * some may be misleading
 
-👉 The agent must interpret signals, not blindly trust them.
-
-![Database Noise](./assets/db_noise.png)
+The agent must interpret outputs rather than treating them as ground truth.
 
 ---
 
 ## 🧠 Explicit Reasoning State
 
-The environment tracks reasoning directly through:
+The environment exposes reasoning through:
 
 * belief distribution
 * entropy (uncertainty)
 * conflict score
 
-👉 This allows measurement of how reasoning evolves over time.
-
-![Belief Distribution](./assets/belief.png)
+This allows tracking how the agent’s understanding evolves.
 
 ---
 
@@ -70,9 +63,7 @@ The underlying structure can change during an episode.
 * relationships may shift
 * prior conclusions may become outdated
 
-👉 The agent must adapt its reasoning.
-
-![Mutation Event](./assets/mutation.png)
+The agent must adapt its reasoning accordingly.
 
 ---
 
@@ -89,48 +80,21 @@ This goes beyond simple prediction.
 
 ---
 
-## 🔍 Behavior Before Training
+## 📊 Training Signal
 
-Before training, the agent:
+Training produces non-trivial learning dynamics.
 
-* follows the most recent signal
-* frequently changes its hypothesis
-* ignores inconsistencies
-
-👉 Behavior is unstable and reactive.
-
-![Before Training](./assets/before.png)
-
----
-
-## 📈 Behavior After Training
-
-After training, the agent:
-
-* cross-checks signals
-* stabilizes belief updates
-* reduces uncertainty
-* converges faster
-
-![After Training](./assets/after.png)
-
-![Reward Comparison](./assets/reward.png)
-
----
-
-## 📊 Observed Training Signals
-
-Early training shows:
-
-* strongly negative rewards
-* high variance between episodes
-* gradual improvement over time
-
-👉 The agent first learns to reduce poor reasoning before improving outcomes.
+Below is a reward curve from early training:
 
 ![Reward Curve](./assets/reward_curve.png)
 
-![Entropy Reduction](./assets/entropy.png)
+Key observations:
+
+* rewards start strongly negative
+* variance is high
+* improvement is gradual
+
+This reflects the difficulty of learning stable reasoning under uncertainty.
 
 ---
 
@@ -141,33 +105,31 @@ The agent does not immediately learn correct answers.
 Instead, it first learns to:
 
 * reduce contradictions
-* avoid misleading signals
 * stabilize belief updates
-
-This intermediate phase is critical for reasoning under uncertainty.
+* avoid misleading signals
 
 ---
 
 ## 🧠 Why This Matters
 
-Many real-world scenarios involve:
+Many real-world systems operate under:
 
 * incomplete information
 * conflicting sources
-* changing systems
+* changing conditions
 
-AFAA provides a controlled environment to study agent behavior under these conditions.
+AFAA provides a controlled environment to study such behavior.
 
 ---
 
 ## 🏁 Summary
 
-> **Not all signals are trustworthy. Good decisions require reasoning, not just prediction.**
+> **Reliable decisions require reasoning—not just prediction.**
 
 ---
 
 ## 🔗 Links
 
 * Hugging Face Space: https://huggingface.co/spaces/sharad0x/openenv-afaa-gym
-* README: [readme](https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/README.md)
+* README: https://github.com/sharad0x/Sovereign-SRE-Gym/blob/main/README.md
 * Repository: https://github.com/sharad0x/Sovereign-SRE-Gym
