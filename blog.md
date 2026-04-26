@@ -128,7 +128,7 @@ Early training shows:
 
 👉 The agent first learns to reduce poor reasoning before improving outcomes.
 
-![Reward Curve](./assets/reward.png)
+![Reward Curve](./assets/reward_curve.png)
 
 ![Entropy Reduction](./assets/entropy.png)
 
