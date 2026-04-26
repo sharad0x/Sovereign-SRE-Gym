@@ -1,7 +1,5 @@
 import os
 import random
-import json
-from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
 from openenv.core.env_server import Environment
@@ -16,13 +14,12 @@ from .coordination import CoordinationEngine
 from .memory import GlobalMemory
 from .npc_engine import NPCEngine
 from .npc_policy import NPCPolicy
-import copy
 from .verifier import verify_submission
 from .rubrics import (CorrectnessRubric, ProgressRubric, EfficiencyRubric, 
-                      ConsistencyRubric, AntiHackingRubric, ExplorationRubric)
+                      ConsistencyRubric, AntiHackingRubric, ExplorationRubric,
+                      EntropyRubric)
 
 env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
 
 # ==============================================================================
 # ENVIRONMENT STOCHASTICITY CONSTANTS
@@ -57,7 +54,8 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
 
         self.rubrics = [
             CorrectnessRubric(), ProgressRubric(), EfficiencyRubric(),
-            ConsistencyRubric(), AntiHackingRubric(), ExplorationRubric()
+            ConsistencyRubric(), AntiHackingRubric(), ExplorationRubric(),
+            EntropyRubric()
         ]
         
         # 🛠️ CORRECTNESS DOMINANCE WEIGHTING
@@ -70,7 +68,8 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             "Efficiency": 1.0,
             "Consistency": 1.5,
             "AntiHacking": 3.0, 
-            "Exploration": 0.5
+            "Exploration": 0.5,
+            "Entropy_Reduction": 1.0
         }
 
     @property
@@ -82,6 +81,9 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             random.seed(seed)
 
         config = AfaaConfig()
+
+        if config.is_training:
+            config.enable_memory = False
 
         diff_cfg = {
             "level": 1, "num_depts": 7, "num_intermediaries": 3,
@@ -169,6 +171,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         # ACTION VALIDATION (NEW FIX)
         # ==========================================
         if dept is None and action.action_type not in [
+            AfaaActionType.SUBMIT_AUDIT,
             AfaaActionType.SUBMIT_CLEAN_AUDIT
         ]:
             return self._fail_step("Department required", -10.0)
@@ -233,6 +236,27 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 "confidence": random.choice(["HIGH", "MEDIUM"]),
                 "strategy": "DATA_VERIFICATION"    
             }
+
+            # FIX 2: DB Leak Protection
+            db_artifact = {
+                "TIMESTAMP": f"2026-Q{random.randint(1,4)}",
+                "DEPT_ID": dept,
+                "ANOMALY_DETECTED": (
+                    random.random() < 0.7 if (is_root or is_intermediary)
+                    else random.random() < 0.2
+                ),
+                "RISK_LEVEL": "HIGH" if fraud_level in ["ROOT", "INTERMEDIARY"] else "LOW",
+                "SOURCE_IP": "REDACTED"
+            }
+            self._current_state.last_db_artifact = db_artifact
+
+            # FIX 6: ADD DATABASE SIGNAL TO ARGUMENT GRAPH
+            self._current_state.argument_graph.append({
+                "source": "DATABASE",
+                "target": dept,
+                "strength": decision["confidence"],
+                "step": self._current_state.step_count
+            })
             
         # ==========================================
         # DISCOVERED NODES TRACKING
@@ -242,9 +266,13 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
 
         if decision:
             target_node = decision.get("target")
-            if target_node and target_node not in ["None", "CLEAN"] and target_node in self._current_state.departments:
-                if target_node not in ["None", "CLEAN", "INTERMEDIARY", "ROOT"]:
-                    self._current_state.discovered_nodes.append(target_node)
+
+            if (
+                target_node
+                and target_node in self._current_state.departments
+                and target_node not in self._current_state.discovered_nodes
+            ):
+                self._current_state.discovered_nodes.append(target_node)
 
         # ==========================================
         # PHYSICS + BELIEF EVOLUTION
@@ -260,9 +288,9 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
                 fraud_level = decision.get("fraud_level")
 
                 if fraud_level == "ROOT":
-                    self._current_state.global_beliefs[target] += 0.2
+                    self._current_state.global_beliefs[target] += 0.12
                 elif fraud_level == "INTERMEDIARY":
-                    self._current_state.global_beliefs[target] += 0.1
+                    self._current_state.global_beliefs[target] += 0.05
                 else:  # CLEAN
                     self._current_state.global_beliefs[target] *= 0.8
 
@@ -422,7 +450,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             GlobalMemory().record_episode(won=won, db_used=self._current_state.db_used, steps=self._current_state.step_count, target_dept=dept)
 
         return self._build_observation(done, total_reward, decision, nl_text, rubric_scores)
-    
+        
     def run_debug_evaluation(self, num_episodes=50):
         total_rewards = []
         success_count = 0
@@ -434,7 +462,10 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             total_reward = 0
 
             while not done:
-                action_name = random.choice(obs.available_actions)
+                if "QUERY_DATABASE" in obs.available_actions:
+                    action_name = "QUERY_DATABASE"
+                else:
+                    action_name = random.choice(obs.available_actions)
 
                 action_obj = AfaaAction(
                     thought="debug",
@@ -448,8 +479,9 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
 
             total_rewards.append(total_reward)
 
-            if obs.done and action_obj.action_type == AfaaActionType.SUBMIT_AUDIT:
-                success_count += 1
+            if done and action_obj.action_type == AfaaActionType.SUBMIT_AUDIT:
+                if action_obj.department in self._current_state.root_causes:
+                    success_count += 1
 
         print("\n===== DEBUG REPORT =====")
         print(f"Success Rate: {success_count/num_episodes:.2f}")
@@ -535,6 +567,13 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
         # ---------------------------
         # Final Observation
         # ---------------------------
+        last_signal = last_decision
+
+        if last_decision and last_decision.get("source") == "DATABASE":
+            if hasattr(self._current_state, "last_db_artifact"):
+                last_signal = dict(last_decision)
+                last_signal["db_artifact"] = self._current_state.last_db_artifact
+
         return AfaaObservation(
             budget_remaining=self._current_state.budget,
             available_departments=self._current_state.departments,
@@ -543,7 +582,7 @@ class AfaaEnvironment(Environment[AfaaAction, AfaaObservation, AfaaState]):
             global_beliefs=self._current_state.global_beliefs,
             conflict_score=float(self._current_state.conflict_score),
             entropy=float(self._current_state.belief_entropy),
-            last_signal=last_decision,
+            last_signal=last_signal,
             auxiliary_language=aux_text,
             reward=float(reward),
             rubric_scores=rubric_scores,

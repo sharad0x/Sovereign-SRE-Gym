@@ -157,3 +157,12 @@ class ExplorationRubric(BaseRubric):
             elif count > 4:
                 reward -= 3.0 # Tunnel vision penalty
         return reward
+
+class EntropyRubric(BaseRubric):
+    def __init__(self): 
+        super().__init__("Entropy_Reduction")
+        
+    def evaluate(self, state, action, next_state, verifier_output) -> float:
+        # If the agent is getting less confused, reward them!
+        entropy_diff = state.belief_entropy - next_state.belief_entropy
+        return float(entropy_diff * 2.0)

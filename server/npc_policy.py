@@ -27,45 +27,32 @@ class NPCPolicy:
                 
             argument_score[t] += strength_val
 
-            # ADD BEFORE final return
-            opponent_history = getattr(state, "belief_about_other", {}).get(opponent_source, {}).get("history", [])
+        opponent_history = getattr(state, "belief_about_other", {}).get(opponent_source, {}).get("history", [])
 
-            for h in opponent_history:
-                if h["claimed_target"] == t:
-                    argument_score[t] -= 0.3  # penalize repeated opponent claim
+        for t in argument_score:
+            penalty = sum(1 for h in opponent_history if h["claimed_target"] == t) * 0.3
+            argument_score[t] -= penalty
             
         return max(argument_score, key=argument_score.get) if argument_score and max(argument_score.values()) > 0 else "None"
-
+    
     @staticmethod
     def get_cfo_decision(state, topic: str) -> Dict[str, str]:
+        # 1. Base validations
         root_causes = getattr(state, "root_causes", None)
-
         if root_causes is None:
             raise RuntimeError("State missing 'root_causes' — invalid environment initialization")
 
+        # 2. Gather state variables
         highest_global_belief = max(
             getattr(state, "global_beliefs", {"None": 1}),
             key=getattr(state, "global_beliefs", {}).get,
             default="None"
         )
-        my_knowledge = getattr(state, "cfo_known_graph", state.fraud_graph)
-
+        my_knowledge = getattr(state, "cfo_known_graph", getattr(state, "fraud_graph", {}))
         coord = getattr(state, "coordination_strategy", "INDEPENDENT")
         best_arg_target = NPCPolicy._get_best_argument_target(state, "WHISTLEBLOWER")
 
-        # ==========================================
-        # NEW: COUNTER STRATEGY
-        # ==========================================
-        opponent_history = getattr(state, "belief_about_other", {}).get("WHISTLEBLOWER", {}).get("history", [])
-
-        if opponent_history:
-            last_claim = opponent_history[-1]["claimed_target"]
-
-            if strategy == "DECEPTION" and last_claim in state.departments:
-                # actively counter opponent
-                target = last_claim
-
-        # 🔥 NEW: coordination affects decision weight
+        # 3. Determine Strategy First (Coordination affects decision weight)
         deception_bias = 1.0
         if coord == "FULL_COALITION":
             deception_bias = 1.5
@@ -74,17 +61,33 @@ class NPCPolicy:
 
         if getattr(state, "cfo_utility", 0) < getattr(state, "wb_utility", 0) * deception_bias:
             strategy = "DECEPTION"
+        else:
+            strategy = "COOPERATION"
 
+        # 4. Determine Target based on the chosen Strategy
+        if strategy == "DECEPTION":
+            # Default Deception Target Logic
             if coord == "FULL_COALITION" and best_arg_target != "None":
                 target = best_arg_target
-            elif highest_global_belief not in state.fraud_graph and highest_global_belief not in root_causes:
+            elif highest_global_belief not in getattr(state, "fraud_graph", {}) and highest_global_belief not in root_causes:
                 target = highest_global_belief
             else:
                 clean_depts = [
-                    d for d in state.departments
-                    if d not in state.fraud_graph and d not in root_causes
+                    d for d in getattr(state, "departments", [])
+                    if d not in getattr(state, "fraud_graph", {}) and d not in root_causes
                 ]
+                import random
                 target = random.choice(clean_depts) if clean_depts else "None"
+
+            # ==========================================
+            # NEW: COUNTER STRATEGY (Override target if needed)
+            # ==========================================
+            opponent_history = getattr(state, "belief_about_other", {}).get("WHISTLEBLOWER", {}).get("history", [])
+            if opponent_history and random.random() < 0.6:
+                last_claim = opponent_history[-1].get("claimed_target", "None")
+                if last_claim in getattr(state, "departments", []):
+                    target = last_claim
+
         else:
             strategy = "COOPERATION"
 
@@ -93,6 +96,12 @@ class NPCPolicy:
             else:
                 next_nodes = my_knowledge.get(topic, [])
                 target = next_nodes[0] if next_nodes else (root_causes[0] if root_causes else "None")
+
+        try:
+            from .coordination import CoordinationEngine
+        except (ImportError, ValueError):
+            from coordination import CoordinationEngine
+        strategy = CoordinationEngine.apply_posture_overrides(state, "CFO", strategy)
 
         confidence = "HIGH" if strategy == "COOPERATION" else "MEDIUM"
 
@@ -119,6 +128,12 @@ class NPCPolicy:
             strategy = "MEASURED_REPORTING"
             next_nodes = my_knowledge.get(topic, [])
             target = next_nodes[0] if next_nodes else (root_causes[0] if root_causes else "None")
+
+        try:
+            from .coordination import CoordinationEngine
+        except (ImportError, ValueError):
+            from coordination import CoordinationEngine
+        strategy = CoordinationEngine.apply_posture_overrides(state, "WHISTLEBLOWER", strategy)
 
         confidence = "HIGH" if strategy == "MEASURED_REPORTING" else "MEDIUM"
 

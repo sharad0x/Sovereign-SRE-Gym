@@ -18,15 +18,22 @@ class NPCEngine:
         """
         source = decision["source"]
         target = decision["target"]
-        strategy = decision["strategy"]
+        strategy = decision.get("strategy", "NEUTRAL")
         conf = decision["confidence"]
+        
+        # 1. Safely extract the optional utterance
+        utterance = decision.get("utterance", "")
 
-        # Fast Bypass for RL Training Loops
         if getattr(state.config, "fast_rl_mode", False) or not self.client:
             return f"[{source} / {conf}] My records indicate the target is {target}."
 
+        # 2. Add an additive conditional to the prompt
+        utterance_context = f"The Auditor just said to you: '{utterance}'" if utterance else "The Auditor is pressing you for information."
+
         prompt = f"""
         Role: {source}. You are being interrogated about {topic}.
+        {utterance_context}
+        
         You have ALREADY decided on the following action based on your internal game theory:
         - Strategy: {strategy}
         - Pointing to Target: {target}

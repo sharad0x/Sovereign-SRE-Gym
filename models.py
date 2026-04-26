@@ -17,6 +17,7 @@ class AfaaAction(BaseModel):
     thought: str = Field(..., description="Internal reasoning before taking action.")
     action_type: AfaaActionType = Field(..., description="The action to perform.")
     department: Optional[str] = Field(default=None, description="The target department.")
+    utterance: Optional[str] = Field(None, description="What you actually say to the NPC.")
 
 class AfaaObservation(BaseModel):
     budget_remaining: int = Field(description="Remaining budget.")
