@@ -120,13 +120,49 @@ Agents must first stabilize reasoning before improving outcomes.
 
 ---
 
-# 📈 Training Signal (Preview)
+# 📈 Training Signals
 
-Below is a representative reward curve from early training:
+Training configuration:
+
+- Steps: 120  
+- Batch Size: 8  
+- Gradient Accumulation: 1  
+
+Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link
+
+### Reward
 
 ![Reward Curve](./assets/reward_curve.png)
 
-*Reward trend across training steps. Improvement is gradual due to strict reasoning constraints.*
+- High variance across steps  
+- Frequent negative rewards due to penalty-heavy design  
+- Noisy behavior with occasional positive spikes  
+
+### Loss
+
+![Loss Curve](./assets/loss_curve.png)
+
+- Highly non-monotonic  
+- Frequent sign changes  
+- No clear convergence trend over this run  
+
+### Short-Run Behavior (Sanity Check)
+
+![8-Step Reward Curve](./assets/8steps_reward_curve.png)
+
+- Captures early interaction dynamics over a very short run  
+- Highlights sensitivity to stochastic transitions and penalties  
+- Not representative of training performance; included for qualitative reference  
+
+[Training Notebook](https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing)
+
+### Summary
+
+- Training remains unstable at this scale (120 steps)  
+- Signals are noisy due to stochastic transitions and delayed rewards  
+- Reward is a more informative signal than loss in this setup  
+
+For detailed interpretation and analysis, refer to the blog.
 
 ---
 

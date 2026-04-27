@@ -80,21 +80,48 @@ This goes beyond simple prediction.
 
 ---
 
-## 📊 Training Signal
+## 📊 Training Dynamics
 
-Training produces non-trivial learning dynamics.
+Training was performed for:
 
-Below is a reward curve from early training:
+- Steps: 120  
+- Batch Size: 8  
+- Gradient Accumulation: 1  
 
-![Reward Curve](./assets/reward_curve.png)
+Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link
 
-Key observations:
+### Reward Curve
 
-* rewards start strongly negative
-* variance is high
-* improvement is gradual
+![Reward Curve](./assets/120steps_reward_curve.png)
 
-This reflects the difficulty of learning stable reasoning under uncertainty.
+Observations:
+
+- High variance due to stochastic environment and multi-source signals  
+- Frequent negative spikes caused by penalties (invalid reasoning / inefficiency)  
+- Smoothed trend shows gradual stabilization over time  
+
+### Loss Curve
+
+![Loss Curve](./assets/loss_curve.png)
+
+Observations:
+
+- Loss is highly noisy with frequent sign changes  
+- No clear downward trend over 120 steps  
+- Large variance across updates despite small batch size  
+- Occasional spikes indicate unstable gradient updates  
+
+### Interpretation
+
+- Training is not yet stable; the policy is still exploring and updating aggressively  
+- The absence of a clear loss trend suggests that reward signals are inconsistent and high-variance  
+- This is expected in early-stage policy-gradient training with:
+  - stochastic transitions  
+  - delayed rewards  
+  - conflicting signals from multiple sources  
+
+- Loss behavior here is not a reliable convergence indicator  
+- Reward trends provide a better signal of learning progress in this setup 
 
 ---
 
