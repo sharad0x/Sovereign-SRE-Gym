@@ -82,16 +82,40 @@ This goes beyond simple prediction.
 
 ## 📊 Training Dynamics
 
-Training was performed for:
+Training was performed under two setups:
 
-- Steps: 120  
-- Batch Size: 8  
-- Gradient Accumulation: 1  
+- Main Run:
+  - Steps: 120  
+  - Batch Size: 8  
+  - Gradient Accumulation: 1  
 
-Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link
-Short-run Notebook: https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing
+- Short-Run Diagnostic:
+  - Steps: 8  
+  - Batch Size: 2  
 
-### Reward Curve
+Training Notebooks:
+
+* Main Training: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link  
+* Short-run Diagnostic: https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing  
+
+---
+
+### Short-Run Behavior (8 Steps)
+
+![8-Step Reward Curve](./assets/8steps_reward_curve.png)
+
+Observations:
+
+- Extremely high variance across steps  
+- Rapid reward swings driven by stochastic transitions  
+- No observable stabilization within such a short horizon  
+
+This run is included as a **sanity check** to show immediate interaction dynamics.  
+It is not representative of training performance.
+
+---
+
+### Reward Curve (120 Steps)
 
 ![Reward Curve](./assets/120steps_reward_curve.png)
 
@@ -99,7 +123,9 @@ Observations:
 
 - High variance due to stochastic environment and multi-source signals  
 - Frequent negative spikes caused by penalties (invalid reasoning / inefficiency)  
-- Smoothed trend shows partial stabilization, though variance remains high
+- Smoothed trend shows partial stabilization, though variance remains high  
+
+---
 
 ### Loss Curve
 
@@ -112,17 +138,16 @@ Observations:
 - Large variance across updates despite small batch size  
 - Occasional spikes indicate unstable gradient updates  
 
+---
+
 ### Interpretation
 
 - Training is not yet stable; the policy is still exploring and updating aggressively  
-- The absence of a clear loss trend suggests that reward signals are inconsistent and high-variance  
-- This is expected in early-stage policy-gradient training with:
-  - stochastic transitions  
-  - delayed rewards  
-  - conflicting signals from multiple sources  
+- Reward signals remain high-variance due to stochastic transitions and delayed feedback  
+- The short-run curve highlights immediate instability, while the longer run shows partial stabilization  
 
-- Loss behavior here is not a reliable convergence indicator  
-- Reward trends provide a better signal of learning progress in this setup 
+- Loss behavior is not a reliable convergence indicator in this setup  
+- Reward trends provide a more interpretable signal of learning progress
 
 ---
 
