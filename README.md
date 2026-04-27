@@ -128,11 +128,9 @@ Training configuration:
 - Batch Size: 8  
 - Gradient Accumulation: 1  
 
-Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link
-
 ### Reward
 
-![Reward Curve](./assets/120steps_reward_curve.png)
+![Reward Curve](./assets/reward_curve.png)
 
 - High variance across steps  
 - Frequent negative rewards due to penalty-heavy design  
@@ -154,13 +152,16 @@ Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutib
 - Highlights sensitivity to stochastic transitions and penalties  
 - Not representative of training performance; included for qualitative reference  
 
-[Training Notebook](https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing)
+Training Notebooks:
+
+- Main Training (120 steps): https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link  
+- Short-Run Diagnostic (8 steps): https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing  
 
 ### Summary
 
 - Training remains unstable at this scale (120 steps)  
 - Signals are noisy due to stochastic transitions and delayed rewards  
-- Reward is a more informative signal than loss in this setup  
+- Reward provides a more interpretable signal than loss under high-variance policy updates
 
 For detailed interpretation and analysis, refer to the blog.
 
