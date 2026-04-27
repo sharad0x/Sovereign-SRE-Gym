@@ -165,6 +165,19 @@ Training Notebooks:
 
 For detailed interpretation and analysis, refer to the blog.
 
+### Note on Training Outputs
+
+Due to session constraints, trained model checkpoints from the 120-step run are not retained.
+
+The results shown here reflect:
+
+- actual training logs  
+- reward and loss dynamics during optimization  
+
+These signals demonstrate how the environment shapes agent learning behavior, even in early-stage training.
+
+The focus of this work is on **environment design and learning dynamics**, rather than final model performance.
+
 ---
 
 # 🧠 Why This Environment Matters
