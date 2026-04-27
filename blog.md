@@ -89,6 +89,7 @@ Training was performed for:
 - Gradient Accumulation: 1  
 
 Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutibqX5J/view?usp=drive_link
+Short-run Notebook: https://drive.google.com/file/d/1n6-xjJ4C9kUrDwM8NHh5W-l2OWvojmH3/view?usp=sharing
 
 ### Reward Curve
 
@@ -98,7 +99,7 @@ Observations:
 
 - High variance due to stochastic environment and multi-source signals  
 - Frequent negative spikes caused by penalties (invalid reasoning / inefficiency)  
-- Smoothed trend shows gradual stabilization over time  
+- Smoothed trend shows partial stabilization, though variance remains high
 
 ### Loss Curve
 
