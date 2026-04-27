@@ -130,7 +130,7 @@ Training configuration:
 
 ### Reward
 
-![Reward Curve](./assets/reward_curve.png)
+![Reward Curve](./assets/120steps_reward_curve.png)
 
 - High variance across steps  
 - Frequent negative rewards due to penalty-heavy design  
