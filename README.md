@@ -132,7 +132,7 @@ Training Notebook: https://drive.google.com/file/d/1apF3WIndnPr5d4QzrU3kIfQIutib
 
 ### Reward
 
-![Reward Curve](./assets/reward_curve.png)
+![Reward Curve](./assets/120steps_reward_curve.png)
 
 - High variance across steps  
 - Frequent negative rewards due to penalty-heavy design  
