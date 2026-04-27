@@ -149,6 +149,23 @@ Observations:
 - Loss behavior is not a reliable convergence indicator in this setup  
 - Reward trends provide a more interpretable signal of learning progress
 
+### Note on Reproducibility
+
+The training curves shown above are generated from actual runs.
+
+However, trained model checkpoints from the longer run are not retained due to session constraints.
+
+As a result, this analysis focuses on:
+
+- training dynamics  
+- reward behavior  
+- stability characteristics  
+
+rather than final agent performance.
+
+This aligns with the goal of this environment:  
+to study how agents learn under uncertainty, rather than optimize a final policy.
+
 ---
 
 ## 🔍 Key Observation
